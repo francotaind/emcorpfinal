@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The site is a single page with hash routes (#about, #services, ...).
+  Search engines ignore everything after "#", so the home page is the only
+  URL that can be listed here. Add /about/, /services/ etc. if the site
+  moves to real page URLs.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://emcorp-capital.com/</loc>
+    <lastmod>2026-11-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
