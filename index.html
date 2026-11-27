@@ -673,11 +673,12 @@
   <div id="admin-page">
     <div id="admin-locked" class="admin-lock">
       <h2>Admin sign-in</h2>
-      <p>Enter the site password to edit page content.</p>
-      <input type="password" id="admin-pass" placeholder="Password" onkeydown="if(event.key==='Enter')tryUnlock()">
-      <div class="err" id="admin-err">Incorrect password. Try again.</div>
-      <button class="btn btn-dark" style="width:100%;justify-content:center;" onclick="tryUnlock()">Sign in</button>
-      
+      <p>Sign in with your admin account to edit page content.</p>
+      <input type="email" id="admin-email" placeholder="Email" autocomplete="username" onkeydown="if(event.key==='Enter')tryUnlock()">
+      <input type="password" id="admin-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')tryUnlock()">
+      <div class="err" id="admin-err">Incorrect email or password. Try again.</div>
+      <button class="btn btn-dark" id="admin-signin-btn" style="width:100%;justify-content:center;" onclick="tryUnlock()">Sign in</button>
+
     </div>
 
     <div id="admin-panel" class="admin-shell" style="display:none;">
@@ -761,6 +762,7 @@
   </div>
 </section>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 /* ===================== DEFAULT CONTENT ===================== */
 const DEFAULT_CONTENT = {
@@ -930,20 +932,20 @@ const DEFAULT_CONTENT = {
   footerBlurb: "Strategic and transaction advisory for corporates, investors, lenders and shareholders navigating complex capital and special situations."
 };
 
-const ADMIN_PASSWORD = "emcorp2026";
 let content = JSON.parse(JSON.stringify(DEFAULT_CONTENT));
 
 /* ===================== SUPABASE PERSISTENCE ===================== */
-// Public project URL + anon key — safe to expose in client-side code,
-// this is how every Supabase-backed static site works. Read access is
-// open to anyone (RLS policy "public can read site content"). Writes
-// require the x-admin-secret header below, which is only ever sent on
-// the save request, not on normal page loads. See the admin secret in
-// the matching RLS policy on the `site_content` table if you ever need
-// to rotate it.
+// Public project URL + anon (publishable) key. These are meant to be
+// public: they only identify the project. What a visitor may do is
+// decided by row-level security on the database, not by this code.
+// Anyone can read `site_content`; only a signed-in user listed in
+// `site_admins` can change it (see supabase/migrations/). There are
+// no passwords or write secrets in this file, and there must never be.
 const SUPABASE_URL = "https://yfnasgjhsvdummwxlsjz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmbmFzZ2poc3ZkdW1td3hsc2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NTU2MjQsImV4cCI6MjEwMzUzMTYyNH0.tkG1Nh4h_JX8oQUYF5bf0m8rqUAL41pdd1tZFkAI_Ak";
-const SUPABASE_ADMIN_SECRET = "emcorp2026-6f3a1c9d";
+const sb = window.supabase
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 const CONTENT_ROW_ID = "emcorp";
 
 const WM_ICONS = [
@@ -981,22 +983,17 @@ async function loadContent(){
 }
 
 async function persistContent(){
+  if(!sb) return false;
   try{
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/site_content?id=eq.${CONTENT_ROW_ID}`,
-      {
-        method: "PATCH",
-        headers: {
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-          "Content-Type": "application/json",
-          "Prefer": "return=minimal",
-          "x-admin-secret": SUPABASE_ADMIN_SECRET
-        },
-        body: JSON.stringify({ content })
-      }
-    );
-    return res.ok;
+    // Runs as the signed-in admin. RLS rejects the write for anyone else,
+    // which shows up as zero updated rows, so ask for the row back.
+    const { data, error } = await sb
+      .from('site_content')
+      .update({ content })
+      .eq('id', CONTENT_ROW_ID)
+      .select('id');
+    if(error){ console.error("Save failed:", error); return false; }
+    return Array.isArray(data) && data.length > 0;
   }catch(e){
     console.error("Storage error:", e);
     return false;
@@ -1238,7 +1235,7 @@ async function saveContent(){
   const ok = await persistContent();
   renderAll();
   const toast = document.getElementById('save-toast');
-  toast.textContent = ok ? "Saved — your site is updated" : "Saved locally — storage unavailable, refresh may lose changes";
+  toast.textContent = ok ? "Saved — your site is updated" : "Not saved — check you are signed in as an admin, then try again";
   toast.classList.add('show');
   setTimeout(()=>toast.classList.remove('show'), 2600);
 }
@@ -1246,27 +1243,60 @@ async function saveContent(){
 async function resetContent(){
   if(!confirm("Restore the original content? This will overwrite any edits you've made.")) return;
   content = JSON.parse(JSON.stringify(DEFAULT_CONTENT));
-  await persistContent();
+  const ok = await persistContent();
   renderAll();
   populateAdminForm();
+  if(!ok) alert("The original content is showing here, but it was not saved. Sign in again and retry.");
 }
 
 /* ===================== ADMIN LOCK ===================== */
-function tryUnlock(){
-  const val = document.getElementById('admin-pass').value;
-  if(val === ADMIN_PASSWORD){
-    document.getElementById('admin-locked').style.display = 'none';
-    document.getElementById('admin-panel').style.display = 'block';
-    document.getElementById('admin-err').style.display = 'none';
-  }else{
-    document.getElementById('admin-err').style.display = 'block';
+// Sign-in is handled by Supabase Auth. Showing the editor is only a
+// convenience: the database itself refuses writes from anyone who is
+// not a signed-in admin, whatever this page does.
+function showAdminPanel(show){
+  document.getElementById('admin-locked').style.display = show ? 'none' : 'block';
+  document.getElementById('admin-panel').style.display = show ? 'block' : 'none';
+}
+function showAdminError(msg){
+  const err = document.getElementById('admin-err');
+  err.textContent = msg;
+  err.style.display = 'block';
+}
+async function isSiteAdmin(){
+  const { data, error } = await sb.rpc('is_site_admin');
+  return !error && data === true;
+}
+async function tryUnlock(){
+  if(!sb){ showAdminError("Sign-in is unavailable right now. Refresh and try again."); return; }
+  const email = document.getElementById('admin-email').value.trim();
+  const password = document.getElementById('admin-pass').value;
+  const btn = document.getElementById('admin-signin-btn');
+  document.getElementById('admin-err').style.display = 'none';
+  btn.disabled = true;
+  try{
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ showAdminError("Incorrect email or password. Try again."); return; }
+    if(!(await isSiteAdmin())){
+      await sb.auth.signOut();
+      showAdminError("This account does not have admin access.");
+      return;
+    }
+    document.getElementById('admin-pass').value = '';
+    showAdminPanel(true);
+  }finally{
+    btn.disabled = false;
   }
 }
-function lockAdmin(){
-  document.getElementById('admin-locked').style.display = 'block';
-  document.getElementById('admin-panel').style.display = 'none';
+async function lockAdmin(){
+  if(sb) await sb.auth.signOut();
+  showAdminPanel(false);
   document.getElementById('admin-pass').value = '';
   navigate('home');
+}
+async function restoreAdminSession(){
+  if(!sb) return;
+  const { data } = await sb.auth.getSession();
+  if(data && data.session && await isSiteAdmin()) showAdminPanel(true);
 }
 
 /* ===================== ROUTING ===================== */
@@ -1312,6 +1342,7 @@ window.addEventListener('hashchange', initRoute);
 window.addEventListener('DOMContentLoaded', () => {
   initRoute();
   loadContent();
+  restoreAdminSession();
 });
 </script>
 </body>
