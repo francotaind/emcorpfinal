@@ -6,6 +6,58 @@
 <title>Emcorp Capital Limited — Debt Placements, Turnaround &amp; Advisory</title>
 <meta name="description" content="Emcorp Capital Limited is a Nairobi-based advisory firm, established in 1999, advising corporates, investors, lenders and shareholders on debt placements, corporate turnaround and transaction advisory across Eastern Africa.">
 <meta name="theme-color" content="#0A2148">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://emcorp-capital.com/">
+<!-- Open Graph / social sharing -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Emcorp Capital Limited">
+<meta property="og:title" content="Emcorp Capital Limited — Debt Placements, Turnaround &amp; Advisory">
+<meta property="og:description" content="Emcorp Capital Limited is a Nairobi-based advisory firm, established in 1999, advising corporates, investors, lenders and shareholders on debt placements, corporate turnaround and transaction advisory across Eastern Africa.">
+<meta property="og:url" content="https://emcorp-capital.com/">
+<meta property="og:image" content="https://emcorp-capital.com/images/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Emcorp Capital Limited logo">
+<meta property="og:locale" content="en_KE">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Emcorp Capital Limited — Debt Placements, Turnaround &amp; Advisory">
+<meta name="twitter:description" content="Emcorp Capital Limited is a Nairobi-based advisory firm, established in 1999, advising corporates, investors, lenders and shareholders on debt placements, corporate turnaround and transaction advisory across Eastern Africa.">
+<meta name="twitter:image" content="https://emcorp-capital.com/images/og-image.png">
+<!-- Structured data for the firm -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": ["Organization", "ProfessionalService"],
+  "@id": "https://emcorp-capital.com/#organization",
+  "name": "Emcorp Capital Limited",
+  "alternateName": "Emcorp Capital",
+  "url": "https://emcorp-capital.com/",
+  "logo": "https://emcorp-capital.com/images/og-image.png",
+  "image": "https://emcorp-capital.com/images/og-image.png",
+  "description": "Emcorp Capital Limited is a Nairobi-based advisory firm, established in 1999, advising corporates, investors, lenders and shareholders on debt placements, corporate turnaround and transaction advisory across Eastern Africa.",
+  "foundingDate": "1999",
+  "email": "info@emcorp-capital.com",
+  "telephone": "+254734410958",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Maruti Heights, 4th Floor, Lang'ata Link Road",
+    "addressLocality": "Nairobi",
+    "addressCountry": "KE"
+  },
+  "areaServed": [
+    {"@type": "Country", "name": "Kenya"},
+    {"@type": "Place", "name": "Eastern Africa"}
+  ],
+  "knowsAbout": ["Debt placements", "Corporate turnaround", "Transaction advisory", "Special situations", "Capital structuring"],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer service",
+    "telephone": "+254734410958",
+    "email": "info@emcorp-capital.com",
+    "availableLanguage": "English"
+  }
+}
+</script>
 <link rel="icon" type="image/png" href="images/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -924,7 +976,7 @@
 <section class="page" id="page-admin">
   <div id="admin-page">
     <div id="admin-locked" class="admin-lock">
-      <h2>Admin sign-in</h2>
+      <h1>Admin sign-in</h1>
       <p>Sign in with your admin account to edit page content.</p>
       <input type="email" id="admin-email" placeholder="Email" autocomplete="username" onkeydown="if(event.key==='Enter')tryUnlock()">
       <input type="password" id="admin-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')tryUnlock()">
@@ -1603,6 +1655,23 @@ function observeReveals(){
 }
 
 /* ===================== ROUTING ===================== */
+const PAGE_META = {
+  'home': ['Emcorp Capital Limited — Debt Placements, Turnaround & Advisory', null],
+  'about': ['About Emcorp Capital Limited — Nairobi Advisory Firm Since 1999', 'Emcorp Capital Limited is a senior-led advisory practice in Nairobi, Kenya, established in 1999, focused on complex capital, transformation and special situations.'],
+  'services': ['Services — Debt Placements, Turnaround & Transaction Advisory | Emcorp Capital', 'Three areas of deep specialization: debt placements, corporate turnaround and transaction advisory, with multi-sectoral experience across Eastern Africa.'],
+  'case-studies': ['Case Studies | Emcorp Capital Limited', 'Selected examples of the refinancing, turnaround and transaction situations Emcorp Capital advises on across Eastern Africa.'],
+  'contact': ['Contact Emcorp Capital Limited — Nairobi, Kenya', 'Start a confidential conversation with Emcorp Capital about a refinancing, turnaround or transaction. Lang\'ata Link Road, Nairobi, Kenya.'],
+  'admin': ['Admin | Emcorp Capital Limited', null]
+};
+const DEFAULT_DESCRIPTION = (document.querySelector('meta[name="description"]') || {}).content || '';
+function setPageMeta(title, description){
+  document.title = title;
+  const d = document.querySelector('meta[name="description"]');
+  if(d) d.setAttribute('content', description || DEFAULT_DESCRIPTION);
+  const r = document.querySelector('meta[name="robots"]');
+  if(r) r.setAttribute('content', location.hash === '#admin' ? 'noindex, nofollow' : 'index, follow');
+}
+
 function navigate(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const target = document.getElementById('page-' + page);
@@ -1613,6 +1682,8 @@ function navigate(page){
   document.querySelector('nav.main-nav').classList.remove('open');
   window.scrollTo({top:0, behavior:'instant' in window ? 'instant' : 'auto'});
   history.replaceState(null, '', '#' + page);
+  const meta = PAGE_META[page] || PAGE_META.home;
+  setPageMeta(meta[0], meta[1]);
 }
 
 function showCaseDetail(id, updateHash){
@@ -1629,6 +1700,7 @@ function showCaseDetail(id, updateHash){
   document.querySelector('nav.main-nav').classList.remove('open');
   window.scrollTo({top:0, behavior:'instant' in window ? 'instant' : 'auto'});
   if(updateHash) history.replaceState(null, '', '#case/' + id);
+  setPageMeta((cs.title || 'Case study') + ' | Emcorp Capital Limited', cs.summary || null);
 }
 
 function initRoute(){
